@@ -282,13 +282,39 @@ exports.collectionList = async(req,res,next)=>{
     		},
     		{
 			    $unwind: "$salorderColl",
-			}
+			}, 
+			{
+				$lookup:{
+					from :"retailermodels",
+					localField:"salorderColl.retailerId",
+					foreignField:"_id",
+					as : "retailerDet"  
+				}
+			},
+			{
+			    $unwind: "$retailerDet",
+			},
 		]).match({$and: [{ "salorderColl.salesmanId":checksalesman._id},{'status':collStatus}]})
-		.project({_id:1,collect:1,collecType:1,status:1,createdAt:1,"salorderColl._id":1,"salorderColl.quantity":1,})
+		.project({_id:1,collect:1,collecType:1,status:1,createdAt:1,"salorderColl._id":1,"salorderColl.quantity":1,"retailerDet.name":1})
 		.sort({"createdAt":-1})
 		.skip(skip).limit(limit)
 		.then((result) => {
-			res.json({error:false ,data:result});
+			let data= result.map((getData)=>{
+				return {
+					_id:getData._id,
+					collect: getData.collect,
+					collecType: getData.collecType,
+					status: getData.status,
+					quantity: getData.salorderColl.quantity,
+					retailername:getData.retailerDet.name
+				}
+			});
+			
+			let countObj = {};
+			countObj['count'] = data.length; 
+			
+			data.push(countObj)
+			res.json({error:false , data:data});
 		})
 		.catch((error) => {
 			res.json({error:true ,err:error.message});
