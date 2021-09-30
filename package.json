@@ -4,7 +4,8 @@
   "description": "Mini project on salesman",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon app.js",
+    "start": "pm2 start app.js",
+    "stop" : "pm2 stop app.js", 
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
@@ -20,6 +21,9 @@
     "express-validator": "^6.12.1",
     "jsonwebtoken": "^8.5.1",
     "mongoose": "^6.0.5",
-    "nodemon": "^2.0.12"
+    "nodemon": "^2.0.12",
+    "pm2": "^5.1.2",
+    "swagger-jsdoc": "^6.1.0",
+    "swagger-ui-express": "^4.1.6"
   }
 }
