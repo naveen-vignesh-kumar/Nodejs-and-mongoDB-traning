@@ -22,7 +22,7 @@ exports.register = async(req,res)=>{
 		}).save().then((result)=>{
 			res.status(200).json({
 				error:false,
-				message:'Inserted successfully'
+				message:'Created successfully'
 			});
 		}).catch((err)=>{
 			res.status(500).json({
@@ -111,14 +111,16 @@ exports.salesmanList= async(req,res,next)=>{
 }
 
 exports.updateSalesman= async (req,res,next)=>{
+
+	if(!req.body.name){
+		res.status(400).json({error: true, message: "salesman Name should not be empty"});
+	}
+	if(!req.query.salesmanid){
+		res.status(400).json({error: true, message: "salesman id should not empty"});
+	}
 	
 	try{
-		if(!req.body.name){
-			res.status(400).json({error: true, message: "salesman Name should not be empty"});
-		}
-		if(!req.query.salesmanid){
-			res.status(400).json({error: true, message: "salesman id should not empty"});
-		}
+		
 		let upd = await salesmanModel.findOneAndUpdate({emailId:req.body.emailId},{
 			$set:{name: req.body.name}
 		});
@@ -131,12 +133,12 @@ exports.updateSalesman= async (req,res,next)=>{
 }
 /*Add product and update*/
 exports.addProduct= async (req,res,next)=>{
-	try{
-		let checkCat = await categoryModel.findOne({name:req.body.category});
+	var checkCat = await categoryModel.findOne({name:req.body.category});
 		if(!checkCat){
 			res.status(404).json({error:true, message:"category is not found"});
 		}
-		
+
+	try{		
 		await new productModel({
 			productname: req.body.productname,
 			productId: "PROD"+ Math.floor(1000 + Math.random() * 9000),
@@ -163,10 +165,10 @@ exports.addProduct= async (req,res,next)=>{
 }
 
 exports.updateProduct = async (req,res,next)=>{
-	try{
-		if(!req.query.id){
+	if(!req.query.id){
 			res.status(400).json({error:true,message: "Product Id missing to update"})
-		}	
+	}
+	try{	
 
 		var updItems = {};
 		var updateStock = {};
@@ -285,10 +287,12 @@ exports.retailerList = async(req,res,next)=>{
 }
 
 exports.retailerStatus = async(req,res,next)=>{
+	
+	if(!req.body.status){
+		res.status(400).json({error: true,message:"status should not be empty"});
+	} 
+
 	try{
-		if(!req.body.status){
-			res.status(400).json({error: true,message:"status should not be empty"});
-		} 
 		let updateStatus = await retailerModel.findByIdAndUpdate(req.body.id,{
 			$set:{status: req.body.status}
 		});
@@ -353,7 +357,7 @@ exports.updateSalesorderStatus= async(req,res,next)=>{
 
 
 exports.collectionList = async(req,res,next)=>{
-	try{	
+	
 		let distDet = await distributorModel.findOne({emailId:req.distData.emailId}).select('_id');
 		
 		const limit= parseInt(req.query.limit?req.query.limit:10);
@@ -361,7 +365,7 @@ exports.collectionList = async(req,res,next)=>{
 
 		var collStatus = req.query.status?req.query.status:'pending';
 
-		let getColl = await collectModel.aggregate([
+		let getData = await collectModel.aggregate([
 			{
 		        $lookup: {
 		            from: "salesordermodels",
@@ -387,8 +391,8 @@ exports.collectionList = async(req,res,next)=>{
 		]).match({$and: [{ "salorderColl.distributorId":distDet._id},{'status':collStatus}]})
 		.project({_id:1,collect:1,collecType:1,status:1,createdAt:1,"salorderColl._id":1,"salorderColl.quantity":1,"retailerDet.name":1})
 		.sort({"createdAt":-1})
-		.skip(skip).limit(limit)
-		.then((result) => {
+		.skip(skip).limit(limit);
+		try {
 
 			let data= result.map((getData)=>{
 				return {
@@ -399,19 +403,14 @@ exports.collectionList = async(req,res,next)=>{
 					quantity: getData.salorderColl.quantity,
 					retailername:getData.retailerDet.name
 				}
-			}) 
+			}); 
 			let countObj = {};
 			countObj['count'] = data.length; 
 			
 			data.push(countObj)
 			res.json({error:false , data:data});
-		})
-		.catch((error) => {
+		}
+		catch(error) {
 			res.json({error:true,message:error.message});
-		});
-
-		
-	}catch(err){
-		res.status().json({error:false,message: err.message});
-	}
+		}
 }

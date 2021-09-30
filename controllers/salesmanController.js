@@ -9,7 +9,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
 exports.login = async(req,res,next)=>{
-	try{
+	
 	let salesmanDet= await salesmanModel.findOne({
 		$and:[
 		{$or:[{salesmanId:req.body.salesmanId},{emailid:req.body.emailId} ]},
@@ -20,6 +20,8 @@ exports.login = async(req,res,next)=>{
 		res.status(404).json({error: true,message:"salesman not found"});
 	}
 
+	try{
+	
 	let checkPassword =await bcrypt.compare(req.body.password ,salesmanDet.password);
 	if(!checkPassword){
 		res.status(404).json({error:true,message:'Incorrect password'});				
@@ -34,12 +36,13 @@ exports.login = async(req,res,next)=>{
 }
 
 exports.addRetailer =async(req,res,next)=>{
-	try{
-		checksalesman = await salesmanModel.findOne({salesmanId:req.salemandata.salesmanId});
+	var checksalesman = await salesmanModel.findOne({salesmanId:req.salemandata.salesmanId});
 		
 		if(!checksalesman){
 			res.status(400).json({error:true,message:"salesman Not found"});
 		}
+
+	try{
 		
 		await new retailerModel({
 			name: req.body.name,
@@ -138,13 +141,14 @@ exports.productlist = async(req,res,next)=>{
 
 exports.addSalesOrder = async(req,res,next)=>{
 
-	try{
-		let checksalesman = await salesmanModel.findOne({salesmanId:req.salemandata.salesmanId});
+	var checksalesman = await salesmanModel.findOne({salesmanId:req.salemandata.salesmanId});
 
-		let getProduct = await productModel.findOne({_id: req.body.productId}).select('price');
+	var getProduct = await productModel.findOne({_id: req.body.productId}).select('price');
 		if(!getProduct){
 			res.status(404).json({error: true,message:"Product Id Not found"});
 		}
+
+	try{
 		
 		await new salesorderModel({
 			productId: req.body.productId,
@@ -263,7 +267,7 @@ exports.addCollect = async(req,res,next)=>{
 }
 
 exports.collectionList = async(req,res,next)=>{
-	try{	
+		
 		let checksalesman = await salesmanModel.findOne({salesmanId:req.salemandata.salesmanId}).select('_id');
 
 		const limit= parseInt(req.query.limit?req.query.limit:10);
@@ -297,9 +301,10 @@ exports.collectionList = async(req,res,next)=>{
 		]).match({$and: [{ "salorderColl.salesmanId":checksalesman._id},{'status':collStatus}]})
 		.project({_id:1,collect:1,collecType:1,status:1,createdAt:1,"salorderColl._id":1,"salorderColl.quantity":1,"retailerDet.name":1})
 		.sort({"createdAt":-1})
-		.skip(skip).limit(limit)
-		.then((result) => {
-			let data= result.map((getData)=>{
+		.skip(skip).limit(limit);
+
+		try{
+			let data= result.map((getColl)=>{
 				return {
 					_id:getData._id,
 					collect: getData.collect,
@@ -315,12 +320,9 @@ exports.collectionList = async(req,res,next)=>{
 			
 			data.push(countObj)
 			res.json({error:false , data:data});
-		})
-		.catch((error) => {
-			res.json({error:true ,err:error.message});
-		});
 		
-	}catch(err){
-		res.status().json({error:true,message: err.message});
-	}
-}
+		}catch(error) {
+			res.json({error:true ,err:error.message});
+		}
+}		
+	
